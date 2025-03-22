@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Memory Game</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>소망2샘</title>
   <style>
     body {
       font-family: sans-serif;
@@ -15,27 +15,50 @@
       padding: 20px;
     }
     h1 {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
+    }
+    #message {
+      font-size: 20px;
+      margin: 10px;
+      color: green;
+      display: none;
+    }
+    #restart-btn {
+      display: none;
+      margin: 10px;
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #1e90ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
     }
     #game-board {
       display: grid;
-      grid-template-columns: repeat(4, 80px);
-      grid-gap: 10px;
+      grid-template-columns: repeat(4, 100px);
+      row-gap: 24px;
+      column-gap: 74px;
     }
     .card {
-      width: 80px;
-      height: 80px;
+      width: 150px;
+      height: 150px;
       background-color: #1e90ff;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 24px;
+      font-size: 18px;
       color: white;
       cursor: pointer;
       user-select: none;
       border-radius: 10px;
       text-align: center;
       overflow: hidden;
+      transition: background 0.3s;
+    }
+    .card img {
+      max-width: 100%;
+      max-height: 100%;
     }
     .card.flipped, .card.matched {
       background-color: #fff;
@@ -49,31 +72,22 @@
   </style>
 </head>
 <body>
-  <h1>Memory Game</h1>
+  <h1>🎉 소망2샘 친구들의 이름을 외워요!!</h1>
+  <div id="message">🎉 성공! 잘했어요!</div>
+  <button id="restart-btn">다시 시작</button>
   <div id="game-board"></div>
 
   <script>
     const board = document.getElementById('game-board');
-
-    const items = [
-      { emoji: '🍎', name: 'Apple' },
-      { emoji: '🍌', name: 'Banana' },
-      { emoji: '🍇', name: 'Grape' },
-      { emoji: '🍓', name: 'Strawberry' },
-      { emoji: '🍍', name: 'Pineapple' },
-      { emoji: '🥝', name: 'Kiwi' },
-      { emoji: '🍉', name: 'Watermelon' },
-      { emoji: '🍒', name: 'Cherry' }
-    ];
-
-    let cards = [];
-    items.forEach(item => {
-      cards.push({ type: 'emoji', value: item.emoji, pair: item.name });
-      cards.push({ type: 'name', value: item.name, pair: item.emoji });
-    });
+    const message = document.getElementById('message');
+    const restartBtn = document.getElementById('restart-btn');
 
     let flippedCards = [];
     let lockBoard = false;
+    let matchedCount = 0;
+    let totalPairs = 8;
+
+    restartBtn.addEventListener('click', initGame);
 
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -97,27 +111,43 @@
       if (lockBoard || card.classList.contains('flipped') || card.classList.contains('matched')) return;
 
       card.classList.add('flipped');
-      card.textContent = card.dataset.value;
+
+      if (card.dataset.type === 'image') {
+        const img = document.createElement('img');
+        img.src = 'images/' + card.dataset.value;
+        card.textContent = '';
+        card.appendChild(img);
+      } else {
+        card.textContent = card.dataset.value;
+      }
 
       flippedCards.push(card);
 
       if (flippedCards.length === 2) {
         lockBoard = true;
         const [first, second] = flippedCards;
+
         const isMatch =
           (first.dataset.value === second.dataset.pair && second.dataset.value === first.dataset.pair);
 
         if (isMatch) {
           first.classList.add('matched');
           second.classList.add('matched');
+          matchedCount++;
           flippedCards = [];
           lockBoard = false;
+
+          // ✅ 모든 쌍 맞추면 성공 메시지 표시
+          if (matchedCount === totalPairs) {
+            message.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+          }
         } else {
           setTimeout(() => {
-            first.classList.remove('flipped');
-            second.classList.remove('flipped');
-            first.textContent = '';
-            second.textContent = '';
+            [first, second].forEach(card => {
+              card.classList.remove('flipped');
+              card.innerHTML = '';
+            });
             flippedCards = [];
             lockBoard = false;
           }, 1000);
@@ -127,10 +157,27 @@
 
     function initGame() {
       board.innerHTML = '';
-      const shuffled = shuffle(cards);
-      shuffled.forEach(cardData => {
-        board.appendChild(createCard(cardData));
-      });
+      message.style.display = 'none';
+      restartBtn.style.display = 'none';
+      flippedCards = [];
+      lockBoard = false;
+      matchedCount = 0;
+
+      fetch('images/images.json')
+        .then(res => res.json())
+        .then(items => {
+          const selectedItems = shuffle(items).slice(0, 8); // 8쌍
+          let cards = [];
+
+          selectedItems.forEach(item => {
+            cards.push({ type: 'image', value: item.file, pair: item.name });
+            cards.push({ type: 'name', value: item.name, pair: item.file });
+          });
+
+          shuffle(cards).forEach(cardData => {
+            board.appendChild(createCard(cardData));
+          });
+        });
     }
 
     initGame();
