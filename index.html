@@ -5,69 +5,96 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>소망2샘</title>
   <style>
+    :root {
+      --mint: #00b7a8;
+      --mint-dark: #00998a;
+      --bg-color: #e0f7f4;
+    }
+
     body {
       font-family: sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #f0f0f0;
+      background: var(--bg-color);
       margin: 0;
       padding: 20px;
     }
+
     h1 {
-      margin-bottom: 10px;
+      margin-bottom: 30px;
+      text-align: center;
     }
+
     #message {
       font-size: 20px;
       margin: 10px;
       color: green;
       display: none;
     }
+
     #restart-btn {
       display: none;
       margin: 10px;
-      padding: 8px 16px;
+      padding: 10px 20px;
       font-size: 16px;
-      background-color: #1e90ff;
+      background-color: var(--mint);
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
     }
+
+    #restart-btn:hover {
+      background-color: var(--mint-dark);
+    }
+
     #game-board {
       display: grid;
-      grid-template-columns: repeat(4, 100px);
-      row-gap: 24px;
-      column-gap: 74px;
+      grid-template-columns: repeat(4, 150px); /* 4x4 고정 */
+      gap: 27px 77px;
+      justify-content: center;
     }
+
     .card {
       width: 150px;
       height: 150px;
-      background-color: #1e90ff;
+      background-color: var(--mint);
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 18px;
+      font-size: 48px; /* 숫자 크게 */
       color: white;
       cursor: pointer;
       user-select: none;
       border-radius: 10px;
       text-align: center;
       overflow: hidden;
+      position: relative;
       transition: background 0.3s;
     }
+
     .card img {
       max-width: 100%;
       max-height: 100%;
     }
-    .card.flipped, .card.matched {
+
+    .card.flipped,
+    .card.matched {
       background-color: #fff;
-      color: #1e90ff;
-      border: 2px solid #1e90ff;
+      color: var(--mint);
+      border: 2px solid var(--mint);
     }
+
     .card.matched {
       background-color: #d4ffd4;
       color: #000;
+    }
+
+    .card-number {
+      position: absolute;
+      font-size: 48px;
+      color: #fff
     }
   </style>
 </head>
@@ -85,7 +112,7 @@
     let flippedCards = [];
     let lockBoard = false;
     let matchedCount = 0;
-    let totalPairs = 8;
+    const totalPairs = 8;
 
     restartBtn.addEventListener('click', initGame);
 
@@ -97,13 +124,21 @@
       return array;
     }
 
-    function createCard(cardData) {
+    function createCard(cardData, index) {
       const card = document.createElement('div');
       card.classList.add('card');
       card.dataset.type = cardData.type;
       card.dataset.value = cardData.value;
       card.dataset.pair = cardData.pair;
+      card.dataset.index = index + 1;
       card.addEventListener('click', () => flipCard(card));
+
+      // 숫자를 카드 중앙에 크게 표시
+      const number = document.createElement('div');
+      number.classList.add('card-number');
+      number.textContent = index + 1;
+      card.appendChild(number);
+
       return card;
     }
 
@@ -112,10 +147,11 @@
 
       card.classList.add('flipped');
 
+      card.innerHTML = ''; // 기존 번호 지우기
+
       if (card.dataset.type === 'image') {
         const img = document.createElement('img');
         img.src = 'images/' + card.dataset.value;
-        card.textContent = '';
         card.appendChild(img);
       } else {
         card.textContent = card.dataset.value;
@@ -128,7 +164,8 @@
         const [first, second] = flippedCards;
 
         const isMatch =
-          (first.dataset.value === second.dataset.pair && second.dataset.value === first.dataset.pair);
+          first.dataset.value === second.dataset.pair &&
+          second.dataset.value === first.dataset.pair;
 
         if (isMatch) {
           first.classList.add('matched');
@@ -137,7 +174,6 @@
           flippedCards = [];
           lockBoard = false;
 
-          // ✅ 모든 쌍 맞추면 성공 메시지 표시
           if (matchedCount === totalPairs) {
             message.style.display = 'block';
             restartBtn.style.display = 'inline-block';
@@ -147,6 +183,10 @@
             [first, second].forEach(card => {
               card.classList.remove('flipped');
               card.innerHTML = '';
+              const num = document.createElement('div');
+              num.classList.add('card-number');
+              num.textContent = card.dataset.index;
+              card.appendChild(num);
             });
             flippedCards = [];
             lockBoard = false;
@@ -166,16 +206,16 @@
       fetch('images/images.json')
         .then(res => res.json())
         .then(items => {
-          const selectedItems = shuffle(items).slice(0, 8); // 8쌍
-          let cards = [];
+          const selectedItems = shuffle(items).slice(0, totalPairs);
+          const cards = [];
 
           selectedItems.forEach(item => {
             cards.push({ type: 'image', value: item.file, pair: item.name });
             cards.push({ type: 'name', value: item.name, pair: item.file });
           });
 
-          shuffle(cards).forEach(cardData => {
-            board.appendChild(createCard(cardData));
+          shuffle(cards).forEach((cardData, index) => {
+            board.appendChild(createCard(cardData, index));
           });
         });
     }
