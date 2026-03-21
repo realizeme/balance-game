@@ -151,7 +151,7 @@
 
       if (card.dataset.type === 'image') {
         const img = document.createElement('img');
-        img.src = 'images/' + encodeURIComponent(card.dataset.value);
+        img.src = 'images/' + encodeURIComponent(card.dataset.value.normalize('NFC'));
         card.appendChild(img);
       } else {
         card.textContent = card.dataset.value;
